@@ -59,3 +59,21 @@ pub fn calc_mul(commands: &Vec<Command>) -> i32 {
   });
   hor * ver
 }
+
+#[aoc(day2, part2)]
+pub fn calc_mul_aim(commands: &Vec<Command>) -> u32 {
+  let mut x = 0;
+  let mut d = 0;
+  let mut aim = 0;
+  for c in commands.iter() {
+    match c.direction {
+      Directions::Forward => {
+        x += c.distance;
+        d += c.distance * aim;
+      }
+      Directions::Up => aim -= c.distance,
+      Directions::Down => aim += c.distance,
+    }
+  }
+  x * d
+}
