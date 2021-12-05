@@ -54,11 +54,10 @@ fn map_field(vents: &Vents, directions: Directions) -> Field {
   let size_x = xs.iter().max().unwrap() + 1;
   let size_y = ys.iter().max().unwrap() + 1;
   println!("Field is {}×{}", size_x, size_y);
-  let mut field = vec![vec![0; size_y]; size_x]; // [x][y]
   vents
     .iter()
     .filter(|v| matches!(directions, Directions::Mixed) || v.a.x == v.b.x || v.a.y == v.b.y)
-    .for_each(|v| {
+    .map(|v| {
       let dir_x = v.a.x.cmp(&v.b.x);
       let dir_y = v.a.y.cmp(&v.b.y);
       let length = if !matches!(dir_x, cmp::Ordering::Equal) {
@@ -66,6 +65,7 @@ fn map_field(vents: &Vents, directions: Directions) -> Field {
       } else {
         cmp::max(v.a.y, v.b.y) - cmp::min(v.a.y, v.b.y)
       };
+      let mut coords: Vec<Coordinate> = Vec::new();
       for i in 0..=length {
         let i_x = match dir_x {
           cmp::Ordering::Equal => v.a.x,
@@ -77,21 +77,15 @@ fn map_field(vents: &Vents, directions: Directions) -> Field {
           cmp::Ordering::Greater => v.a.y - i,
           cmp::Ordering::Less => v.a.y + i,
         };
-        field[i_x][i_y] += 1;
+        coords.push(Coordinate { x: i_x, y: i_y });
       }
-    });
-  // for y in 0..size_y {
-  //   for x in 0..size_x {
-  //     let p = field[x][y];
-  //     if p == 0 {
-  //       print!(".");
-  //     } else {
-  //       print!("{}", p);
-  //     }
-  //   }
-  //   print!("\n");
-  // }
-  field
+      coords
+    })
+    .flatten()
+    .fold(vec![vec![0; size_y]; size_x], |mut field, c| {
+      field[c.x][c.y] += 1;
+      field
+    })
 }
 
 fn count_overlaps(field: &Field) -> u32 {
