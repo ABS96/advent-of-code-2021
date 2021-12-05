@@ -44,22 +44,24 @@ pub fn parse_input(input: &str) -> Bingo {
   }
 }
 
-fn get_score(rows: &Board, numbers: &[u32]) -> u32 {
-  // If there's at least one row with all numbers marked
+fn get_score(rows: &Board, numbers: &[u32]) -> Option<u32> {
+  // If there's at least one row with all numbers marked,
   if rows.iter().any(|row| {
     row
       .iter()
       .all(|num| numbers.iter().any(|marked| marked == num))
   }) {
-    // Then return all numbers that haven't yet been marked
-    rows
-      .iter()
-      .flatten()
-      .filter(|num| numbers.iter().all(|marked| &marked != num))
-      .sum()
+    // then return the sum of all unmarked numbers
+    Some(
+      rows
+        .iter()
+        .flatten()
+        .filter(|num| numbers.iter().all(|marked| &marked != num))
+        .sum(),
+    )
   } else {
-    0
-  } // Otherwise return 0
+    None
+  }
 }
 
 fn transpose_board(board: &Board) -> Board {
@@ -80,32 +82,46 @@ fn transpose_board(board: &Board) -> Board {
     .collect()
 }
 
+fn evaluate_boards(bingo: &Bingo, drawn: &[u32]) -> Vec<Option<u32>> {
+  // Let's be careful not to overindex the drawn numbers here!
+  bingo
+    .boards
+    .iter()
+    .map(|board| {
+      let row_score = get_score(&board, &drawn);
+      let column_score = get_score(&transpose_board(&board), &drawn);
+      cmp::max(row_score, column_score) // This can handle Options, awesome!
+    })
+    .collect()
+}
+
 #[aoc(day4, part1)]
 pub fn bingo_score(bingo: &Bingo) -> u32 {
   // 5 numbers must be drawn before a win can occur, so start from there
-  // n is the number of items we will consider
-  for n in 5..=bingo.numbers.len() {
-    // Let's be careful not to overindex the drawn numbers here!
-    let drawn = &bingo.numbers[0..n];
-    let highest_score = bingo
-      .boards
-      .iter()
-      .map(|board| {
-        let row_score = get_score(&board, &drawn);
-        let column_score = get_score(&transpose_board(&board), &drawn);
-        cmp::max(row_score, column_score)
-      })
-      .max()
-      .unwrap(); // iterator::max() yields an Option, but here it will always be Some
-    if highest_score > 0 {
-      let winning_number = *drawn.iter().last().unwrap();
-      println!(
-        "In round {}, {} will be called, and a board will win with a score of {}",
-        n, winning_number, highest_score
-      );
-      return highest_score * winning_number;
+  for round in 5..=bingo.numbers.len() {
+    let drawn = &bingo.numbers[0..round];
+    let scores = evaluate_boards(bingo, drawn);
+    let first_score = scores.iter().find(|score| score.is_some());
+    if first_score.is_some() {
+      println!("First win occurs at round {}", round);
+      return first_score.unwrap().unwrap() * drawn.last().unwrap();
     }
   }
-  println!("Nobody wins.");
+  return 0;
+}
+
+#[aoc(day4, part2)]
+pub fn bingo_last_score(bingo: &Bingo) -> u32 {
+  let mut idx_incomplete = 0;
+  for round in 5..=bingo.numbers.len() {
+    let drawn = &bingo.numbers[0..round];
+    let scores = evaluate_boards(bingo, drawn);
+    if scores.iter().all(|score| score.is_some()) {
+      println!("Last win occurs at round {}", round);
+      return scores[idx_incomplete].unwrap() * drawn.last().unwrap();
+    } else {
+      idx_incomplete = scores.iter().position(|score| score.is_none()).unwrap();
+    }
+  }
   return 0;
 }
