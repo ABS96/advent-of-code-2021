@@ -13,23 +13,24 @@ fn age_counts(ages: &Vec<usize>) -> Vec<u64> {
   ages
     .iter()
     .fold(vec![0; YOUNG_CYCLE + 1], |mut counts, age| {
-      counts[YOUNG_CYCLE - *age as usize] += 1; // first is youngest, last is spawning
+      counts[YOUNG_CYCLE - *age] += 1; // first is youngest, last is spawning
       counts
     })
 }
 
 fn population(initial_ages: &Vec<usize>, days: usize) -> u64 {
   // Number of fish selected by day of their cycles
-  let mut fish = age_counts(initial_ages);
-
-  for _ in 0..days {
-    let spawning = fish.pop().unwrap(); // number of new fish
-    let mut f = vec![spawning]; // construct new day
-    f.extend(&fish); // grow existing fish
-    f[YOUNG_CYCLE - MATURE_CYCLE] += spawning; // reset parents' cycle
-    fish = f;
-  }
-  fish.iter().sum()
+  (0..days)
+    .into_iter()
+    .fold(age_counts(initial_ages), |mut fish, _| {
+      let spawning = fish.pop().unwrap(); // number of new fish
+      let mut f = vec![spawning]; // construct new day
+      f.extend(&fish); // grow existing fish
+      f[YOUNG_CYCLE - MATURE_CYCLE] += spawning; // reset parents' cycle
+      f
+    })
+    .iter()
+    .sum()
 }
 
 #[aoc(day6, part1)]
