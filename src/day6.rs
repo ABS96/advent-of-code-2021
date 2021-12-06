@@ -1,25 +1,43 @@
+const YOUNG_CYCLE: usize = 8;
+const MATURE_CYCLE: usize = 6;
+
 #[aoc_generator(day6)]
-pub fn parse_fish_ages(input: &str) -> Vec<u8> {
+pub fn parse_fish_ages(input: &str) -> Vec<usize> {
   input.split(',').fold(Vec::new(), |mut ages, a| {
-    ages.push(a.parse::<u8>().unwrap());
+    ages.push(a.parse::<usize>().unwrap());
     ages
   })
 }
 
-#[aoc(day6, part1)]
-pub fn population_80(initial_ages: &Vec<u8>) -> usize {
-  let mut ages = initial_ages.clone();
-  for _ in 0..80 {
-    let new_fish: usize = ages.iter_mut().fold(0, |new_fish, age| {
-      if age == &0 {
-        *age = 6;
-        new_fish + 1
-      } else {
-        *age -= 1;
-        new_fish
-      }
-    });
-    ages.append(&mut vec![8; new_fish]);
+fn age_counts(ages: &Vec<usize>) -> Vec<u64> {
+  ages
+    .iter()
+    .fold(vec![0; YOUNG_CYCLE + 1], |mut counts, age| {
+      counts[YOUNG_CYCLE - *age as usize] += 1; // first is youngest, last is spawning
+      counts
+    })
+}
+
+fn population(initial_ages: &Vec<usize>, days: usize) -> u64 {
+  // Number of fish selected by day of their cycles
+  let mut fish = age_counts(initial_ages);
+
+  for _ in 0..days {
+    let spawning = fish.pop().unwrap(); // number of new fish
+    let mut f = vec![spawning]; // construct new day
+    f.extend(&fish); // grow existing fish
+    f[YOUNG_CYCLE - MATURE_CYCLE] += spawning; // reset parents' cycle
+    fish = f;
   }
-  ages.len()
+  fish.iter().sum()
+}
+
+#[aoc(day6, part1)]
+pub fn population_80(initial_ages: &Vec<usize>) -> u64 {
+  population(initial_ages, 80)
+}
+
+#[aoc(day6, part2)]
+pub fn population_256(initial_ages: &Vec<usize>) -> u64 {
+  population(initial_ages, 256)
 }
