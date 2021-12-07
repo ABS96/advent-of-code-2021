@@ -18,12 +18,12 @@ fn fuel_cost(x1: u32, x2: u32, rate: FuelBurnRate) -> u32 {
 }
 
 fn lowest_cost(subs: &Vec<u32>, rate: FuelBurnRate) -> u32 {
-  // consider all positions between the leftmost and rightmost submarine
+  // consider all positions from the leftmost to the rightmost submarine
   (0..=*subs.iter().max().unwrap()).fold(u32::MAX, |lowest, pos| {
     u32::min(
-      // for each position, calculate the cost of all submarines going there
       lowest,
       subs
+        // for each position, calculate the cost of all submarines going there
         .iter()
         .fold(0, |total, sub| total + fuel_cost(pos as u32, *sub, rate)),
     )
